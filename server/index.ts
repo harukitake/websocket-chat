@@ -39,6 +39,14 @@ io.on('connection', socket => {
       text: `${socket.id}が退出しました`,
     } as Message)
   })
+
+  socket.on('start typing', user => {
+    socket.broadcast.emit('start typing', user)
+  })
+
+  socket.on('stop typing', user => {
+    socket.broadcast.emit('stop typing', user)
+  })
 })
 
 server.listen(PORT, () => {

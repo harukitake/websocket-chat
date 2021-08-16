@@ -20,6 +20,7 @@
             <v-btn flat color="secondary" @click="sendMessage">
               送信
             </v-btn>
+            <v-card-text>{{ typingUserText }}</v-card-text>
           </v-card-item>
         </v-card>
       </v-col>
@@ -30,6 +31,11 @@
 <script>
 import io from 'socket.io-client'
 
+/**
+ * タインピング中と判定しなくなるまでの時間(ms)
+ * @type {number}
+ */
+const TYPING_INTERVAL = 3000;
 export default {
   name: 'Chat',
   data() {
@@ -39,7 +45,10 @@ export default {
       title: 'Chat',
       socket,
       messageInput: '',
-      messages: []
+      messages: [],
+      isTyping: false,
+      timeout: null,
+      typingUsers: [],
     }
   },
   mounted() {
@@ -47,10 +56,41 @@ export default {
       console.log('connected!')
 
       this.socket.on('message', newMessage => {
-        console.log(newMessage)
         this.messages.push(newMessage)
       })
+
+      this.socket.on('start typing', user => {
+        console.log(user)
+        this.typingUsers.push(user.id)
+      })
+
+      this.socket.on('stop typing', user => {
+        const index = this.typingUsers.indexOf(user.id)
+        this.typingUsers.splice(index, 1)
+      })
     })
+  },
+  computed: {
+    typingUserText() {
+      if (this.typingUsers.length === 1) {
+        return `${this.typingUsers[0]} is typing`
+      } else if (this.typingUsers.length > 1) {
+        return `${this.typingUsers.join(',')} are typing`
+      }
+
+      return ''
+    },
+  },
+  watch: {
+    messageInput() {
+      if (this.isTyping) {
+        clearTimeout(this.timeout)
+      } else {
+        this.isTyping = true
+        this.socket.emit('start typing', { id: this.socket.id })
+      }
+      this.timeout = setTimeout(this.resetIsTyping, TYPING_INTERVAL)
+    },
   },
   methods: {
     sendMessage() {
@@ -60,6 +100,10 @@ export default {
       })
 
       this.messageInput = ''
+    },
+    resetIsTyping() {
+      this.isTyping = false
+      this.socket.emit('stop typing', { id: this.socket.id })
     },
   }
 }
