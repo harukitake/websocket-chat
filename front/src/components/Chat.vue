@@ -4,7 +4,8 @@
     <v-row no-gutters>
       <v-col v-for="(message, i) in messages" :key="i" cols="12">
         <v-card class="pa-2" elevation="2" outlined>
-          <v-card-text>{{ message }}</v-card-text>
+          <v-card-subtitle>{{ message.id }}</v-card-subtitle>
+          <v-card-text class="message-text">{{ message.text }}</v-card-text>
         </v-card>
       </v-col>
 
@@ -38,15 +39,13 @@ export default {
       title: 'Chat',
       socket,
       messageInput: '',
-      messages: [
-          'hi',
-          'hiiii'
-      ]
+      messages: []
     }
   },
   mounted() {
     this.socket.on('connect', () => {
       console.log('connected!')
+
       this.socket.on('message', newMessage => {
         console.log(newMessage)
         this.messages.push(newMessage)
@@ -55,9 +54,10 @@ export default {
   },
   methods: {
     sendMessage() {
-      console.log('hi')
-      const messageInput = this.messageInput
-      this.socket.emit('message', messageInput)
+      this.socket.emit('message', {
+        id: this.socket.id,
+        text: this.messageInput,
+      })
 
       this.messageInput = ''
     },
@@ -78,5 +78,11 @@ export default {
   background-clip: padding-box;
   border: 1px solid #dee2e6;
   appearance: none;
+}
+
+.message-text {
+  color: black;
+  font-size: large;
+  opacity: 1.0;
 }
 </style>
