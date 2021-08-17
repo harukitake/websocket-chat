@@ -19,25 +19,34 @@ app.get('/', (req, res) => {
   res.send('Hello!!!')
 })
 
-io.on('connection', socket => {
+// 接続数
+let connectionCount = 0
+io.on('connection', async socket => {
   console.log('server connected!')
+  connectionCount++
+  io.emit('count', connectionCount)
+
   socket.broadcast.emit('message', {
     id: '',
+    nickname: '',
     text: `${socket.id}が入室しました`
   } as Message)
 
   socket.on('message', (newMessage: Message) => {
-    console.log('message come')
     console.log(newMessage)
     io.emit('message', newMessage);
   })
 
   socket.on('disconnect', reason => {
     console.log(reason)
+    connectionCount--
     socket.broadcast.emit('message', {
       id: '',
+      nickname: '',
       text: `${socket.id}が退出しました`,
     } as Message)
+
+    io.emit('count', connectionCount)
   })
 
   socket.on('start typing', user => {
